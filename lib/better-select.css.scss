@@ -1,0 +1,18 @@
+.select {
+  position: relative;
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    left: -99999px;
+  }
+
+  &.open {
+    .dropdown {
+      left: 0px;
+    }
+  }
+
+  .option, .selected-option {
+    cursor: pointer;
+  }
+}
