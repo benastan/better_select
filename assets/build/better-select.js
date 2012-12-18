@@ -63,7 +63,9 @@
 
   build_element = function(what, orig, obj) {
     var elm;
-    ((elm = $$(_.template(obj["" + what + "_template"])(obj["process_" + what](orig)))).orig = orig).better_version = elm;
+    elm = $$(_.template(obj["" + what + "_template"])(obj["process_" + what](orig)));
+    elm.orig = orig;
+    orig.better_version = elm;
     elm.better_select = obj;
     return elm;
   };

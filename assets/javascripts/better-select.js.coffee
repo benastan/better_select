@@ -32,9 +32,7 @@ letters = 'a b c d e f g h i j k l m n o p q r s t u v w x y z'.split ' '
 numbers = '0 1 2 3 4 5 6 7 8 9 0'.split ' '
 
 build_element = (what, orig, obj) ->
-  elm = $$ _.template(obj["#{what}_template"]) obj["process_#{what}"] orig
-  elm.orig = orig
-  orig.better_version = elm
+  ((elm = $$ _.template(obj["#{what}_template"]) obj["process_#{what}"] orig).orig = orig).better_version = elm
   elm.better_select = obj
   elm
 
