@@ -45,7 +45,7 @@ renderOption = (orig_option, bs) ->
   option.select = ->
     @orig.selected = 'selected'
     @setAttribute 'class', 'option selected'
-    bs.toggle() if bs.select.getAttribute('class').indexOf('open') isnt -1
+    bs.toggle() if bs.open is true
     bs.set_selected option
   option.addEventListener 'click', -> option.select()
   option.addEventListener 'mouseover', -> option.better_select.set_focused option
@@ -135,7 +135,6 @@ class BetterSelect
             @set_focused option
             @focus_index = @options.indexOf option
             last_character = char
-      @dropdown.addEventListener('click', -> console.log arguments)
       e.preventDefault()
       e.stopPropagation()
       e.returnValue = false
