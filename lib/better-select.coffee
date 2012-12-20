@@ -37,17 +37,23 @@ build_element = (what, orig, obj) ->
 
 renderOption = (orig_option, bs) ->
   option = build_element 'option', orig_option, bs
+
   option.reset = ->
     @orig.selected = undefined
     @setAttribute 'class', 'option'
     bs.reset @
+
   option.select = ->
     @orig.selected = 'selected'
     @setAttribute 'class', 'option selected'
-    bs.toggle() if bs.open is true
     bs.set_selected option
-  option.addEventListener 'click', -> option.select()
+    bs.toggle() if bs.open
+
+  option.addEventListener 'click', ->
+    option.select()
+
   option.addEventListener 'mouseover', -> option.better_select.set_focused option
+
   bs.options.push option
   first_char = option.innerHTML.substr(0, 1).toLowerCase()
   unless bs.options_by_first_char[first_char]
@@ -66,8 +72,10 @@ renderOptionGroup = (orig_group, bs) ->
   group
 
 class BetterSelect
+
   defaults:
     positionDropdown: true
+
   constructor: (elm, options) ->
     return unless elm && elm.tagName && elm.tagName is 'SELECT'
     @settings = _.extend {}, @defaults, options
@@ -77,17 +85,21 @@ class BetterSelect
     selected = elm.selectedOptions
     @select = build_element 'select', elm, @
     [@selected_option, @dropdown] = @select.children
+
     if elm.id
       @select.id = "#{elm.id}-better-select"
       @dropdown.id = "#{elm.id}-better-select-dropdown"
+
     @default_selected = [elm.children[elm.selectedIndex]]
     elm.parentNode.insertBefore @select, elm
     elm.parentNode.insertBefore elm, @select
     elm.style.display = 'none'
     children = elm.children
+
     if @settings.positionDropdown
       document.body.appendChild @dropdown
       @dropdown.style.left = '-9999px'
+
     for child in children
       switch child.tagName
         when 'OPTION'
@@ -95,10 +107,16 @@ class BetterSelect
         when 'OPTGROUP'
           method = renderOptionGroup
       @dropdown.appendChild(method child, @)
+
     @default_selected[0].better_version.select() if @default_selected
+
     @selected_option.addEventListener 'click', =>
+      if @open
+        @focused_option.select() if @focused_option
+      else
+        @set_focused @dropdown_selected_option
       @toggle()
-      @set_selected @dropdown_selected_option
+
     window.addEventListener 'click', (e) =>
       unless e.target == @selected_option || e.target == @select || @options.indexOf(e.target) isnt -1
         @toggle() if @open
@@ -108,11 +126,13 @@ class BetterSelect
     @selected_option.addEventListener 'focus', =>
       document.body.style.overflow = 'hidden'
       addClass @select, 'focus'
+
     @selected_option.addEventListener 'blur', =>
       removeClass @select, 'focus'
       document.body.style.overflow = 'auto'
       @toggle() if @open is true
       true
+
     @selected_option.addEventListener 'keydown', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
 
     @selected_option.addEventListener 'keyup', (e) => @process_key_event(e)
@@ -160,7 +180,9 @@ class BetterSelect
     @focused_option = option
     @focused_option.setAttribute("class", "option focus#{class_for_selected(option)}")
     @focus_index = @options.indexOf @focused_option
+
   open: false
+
   toggle: ->
     (if @open = !@open then addClass else removeClass)(@select, 'open')
     if @settings.positionDropdown
@@ -175,7 +197,9 @@ class BetterSelect
       top = getTop(@select) - (@dropdown_selected_option.offsetTop - @dropdown.scrollTop)
       @dropdown.style.top = (if top < 0 then 0 else top)  + 'px'
       @dropdown.style.left = if @open then getLeft(@select) + 'px' else '-9999px'
+
   reset: (option) -> @default_selected[0].better_version.select() if @default_selected
+
   set_selected: (option) ->
     unless @selected_option.innerHTML == option.innerHTML
       removeClass(@dropdown_selected_option, 'selected') if @dropdown_selected_option
@@ -184,12 +208,13 @@ class BetterSelect
       e = document.createEvent('Event')
       e.initEvent 'change', true, true
       @select.orig.dispatchEvent e
+    @selected_option.focus()
+
   option_template: '<div class="option"><%= innerHTML %></div>'
   option_group_template: '<div class="optgroup"><div class="option-group-label"><%= label %></div></div>'
   select_template: '<div class="select"><a href="javascript:void(0)" class="selected-option"></a><div class="better-select-dropdown dropdown"></div></div>'
   process_option: (option) -> option
   process_option_group: (option_group) -> option_group
   process_select: (select) -> select
-
 
 window.BetterSelect = BetterSelect
