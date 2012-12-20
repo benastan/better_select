@@ -20,12 +20,11 @@ setClasses = (tgt, classes) ->
   tgt
 
 addClass = (tgt, className) ->
-  classes = getClasses tgt
-  classes.push(className) if classes.indexOf(className) is -1
+  classes.push(className) if (classes = getClasses tgt).indexOf(className) is -1
   setClasses tgt, classes
 
 removeClass = (tgt, className) ->
-  classes.splice(index, 1) unless index = (classes = getClasses tgt).indexOf className is -1
+  classes.splice(index, 1) unless (index = (classes = getClasses tgt).indexOf className) is -1
   setClasses tgt, classes
 
 letters = 'a b c d e f g h i j k l m n o p q r s t u v w x y z'.split ' '
@@ -103,7 +102,9 @@ class BetterSelect
     window.addEventListener 'click', (e) =>
       unless e.target == @selected_option || e.target == @select || @options.indexOf(e.target) isnt -1
         @toggle() if @open
-    last_char = false
+
+    @last_char = false
+
     @selected_option.addEventListener 'focus', =>
       document.body.style.overflow = 'hidden'
       addClass @select, 'focus'
