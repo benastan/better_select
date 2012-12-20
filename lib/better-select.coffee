@@ -113,38 +113,46 @@ class BetterSelect
       @toggle() if @open is true
       true
     @selected_option.addEventListener 'keydown', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
-    @selected_option.addEventListener 'keyup', (e) =>
-      @toggle() if @open is false
-      keyCode = e.keyCode
-      switch keyCode
-        when 38 then @set_focused @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index]
-        when 40 then @set_focused @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index]
-        when 13
-          @focused_option.select()
-        else
-          if keyCode > 47 && keyCode < 58
-            char = numbers[keyCode - 47]
-          else if keyCode > 64 && keyCode < 91
-            char = letters[keyCode - 65]
-          else
-            if @focused_option
-              removeClass @focused_option, 'focus'
-              @focused_option = false
-              @focus_index = -1
-            @toggle()
-          if char && @options_by_first_char[char]
-            @options_by_first_char[char].sort() unless last_char is char
-            option = @options_by_first_char[char].shift()
-            @options_by_first_char[char].push option
-            @set_focused option
-            @focus_index = @options.indexOf option
-            last_character = char
-      e.preventDefault()
-      e.stopPropagation()
-      e.returnValue = false
-      false
+
+    @selected_option.addEventListener 'keyup', (e) => @process_key_event(e)
+
+    window.addEventListener 'keyup', (e) => @process_key_event(e) if @open
+
   focused_option: false
   focus_index: -1
+
+  process_key_event: (e) ->
+    keyCode = e.keyCode
+    isNumber = keyCode > 47 && keyCode < 58
+    isLetter = keyCode > 64 && keyCode < 91
+
+    return unless [13, 38, 40].indexOf(keyCode) isnt -1 || isLetter || isNumber
+
+    @toggle() if [13, 38, 40].indexOf(keyCode) isnt -1 && @open is false
+
+    switch keyCode
+      when 38 then @set_focused @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index]
+      when 40 then @set_focused @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index]
+      when 13 then @focused_option.select() if @focused_option
+      else
+        if isNumber
+          char = numbers[new String(keyCode - 48)]
+        else if isLetter
+          char = letters[keyCode - 65]
+
+        if char && @options_by_first_char[char]
+          @toggle() unless @open
+          @options_by_first_char[char].sort() unless @last_char is char
+          option = @options_by_first_char[char].shift()
+          @options_by_first_char[char].push option
+          @set_focused option
+          @focus_index = @options.indexOf option
+          @last_char = char
+
+    e.preventDefault()
+    e.stopPropagation()
+    e.returnValue = false
+
   set_focused: (option) ->
     class_for_selected = (option) => if @selected_option && option.innerHTML is @selected_option.innerHTML then " selected" else ""
     @focused_option.setAttribute('class', "option#{class_for_selected(@focused_option)}") if @focused_option
