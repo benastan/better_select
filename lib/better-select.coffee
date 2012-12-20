@@ -51,7 +51,11 @@ renderOption = (orig_option, bs) ->
   option.addEventListener 'mouseover', -> option.better_select.set_focused option
   bs.options.push option
   first_char = option.innerHTML.substr(0, 1).toLowerCase()
-  bs.options_by_first_char[first_char] = [] unless bs.options_by_first_char[first_char]
+  unless bs.options_by_first_char[first_char]
+    bs.options_by_first_char[first_char] = []
+    bs.options_by_first_char[first_char].sort = ->
+      (sorted = _(@).sortBy 'innerHTML').unshift 0, @.length
+      @.splice.apply @, sorted
   bs.options_by_first_char[first_char].push option
   bs.options_by_first_char[first_char].sort()
   option
