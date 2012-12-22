@@ -205,6 +205,7 @@ class BetterSelect
       top = getTop(@select) - (@dropdown_selected_option.offsetTop - @dropdown.scrollTop)
       @dropdown.style.top = (if top < 0 then 0 else top)  + 'px'
       @dropdown.style.left = if @open then getLeft(@select) + 'px' else '-9999px'
+    _(@options_by_first_char).each (options) -> options.sort()
 
   reset: (option) -> @default_selected[0].better_version.select() if @default_selected
 
