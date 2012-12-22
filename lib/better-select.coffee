@@ -75,6 +75,7 @@ class BetterSelect
 
   defaults:
     positionDropdown: true
+    resizeDropdown: true
 
   constructor: (elm, options) ->
     return unless elm && elm.tagName && elm.tagName is 'SELECT'
@@ -185,6 +186,8 @@ class BetterSelect
 
   toggle: ->
     (if @open = !@open then addClass else removeClass)(@select, 'open')
+    if @settings.resizeDropdown
+      @dropdown.style.width = @select.offsetWidth + 'px'
     if @settings.positionDropdown
       if @dropdown.offsetHeight > window.innerHeight
         height = window.innerHeight * .50
