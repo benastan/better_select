@@ -86,6 +86,7 @@ class BetterSelect
     selected = elm.selectedOptions
     @select = build_element 'select', elm, @
     [@selected_option, @dropdown] = @select.children
+    @selected_option.better_select = @
 
     if elm.id
       @select.id = "#{elm.id}-better-select"
