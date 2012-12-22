@@ -221,7 +221,7 @@ class BetterSelect
 
   option_template: '<div class="option"><%= innerHTML %></div>'
   option_group_template: '<div class="optgroup"><div class="option-group-label"><%= label %></div></div>'
-  select_template: '<div class="select"><a href="javascript:void(0)" class="selected-option"></a><div class="better-select-dropdown dropdown"></div></div>'
+  select_template: '<div class="select better-select"><a href="javascript:void(0)" class="selected-option"></a><div class="better-select-dropdown dropdown"></div></div>'
   process_option: (option) -> option
   process_option_group: (option_group) -> option_group
   process_select: (select) -> select
