@@ -150,6 +150,8 @@ class BetterSelect
     isNumber = keyCode > 47 && keyCode < 58
     isLetter = keyCode > 64 && keyCode < 91
 
+    return @select_focused() if keyCode is 9 && @open
+
     return unless [13, 38, 40].indexOf(keyCode) isnt -1 || isLetter || isNumber
 
     @toggle() if [13, 38, 40].indexOf(keyCode) isnt -1 && @open is false
@@ -157,7 +159,7 @@ class BetterSelect
     switch keyCode
       when 38 then @set_focused @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index]
       when 40 then @set_focused @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index]
-      when 13 then @focused_option.select() if @focused_option
+      when 13 then @select_focused()
       else
         if isNumber
           char = numbers[new String(keyCode - 48)]
@@ -183,6 +185,7 @@ class BetterSelect
     @focused_option = option
     @focused_option.setAttribute("class", "option focus#{class_for_selected(option)}")
     @focus_index = @options.indexOf @focused_option
+    @focused_option.scrollIntoView()
 
   open: false
 
