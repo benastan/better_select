@@ -142,6 +142,7 @@ class BetterSelect
 
   focused_option: false
   focus_index: -1
+  select_focused: -> @focused_option.select() if @focused_option
 
   process_key_event: (e) ->
     keyCode = e.keyCode
