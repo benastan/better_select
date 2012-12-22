@@ -6,7 +6,9 @@ replacer.
 ## Installation
 
 Add to HTML web page:
-
+    
+    <!-- Underscore is BetterSelect's only dependency -->
+    <script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
     <script type="text/javascript" src="https://raw.github.com/benastan/better_select/master/build/better-select.js"></script>
 
 Or clone source:
