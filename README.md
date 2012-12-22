@@ -7,11 +7,11 @@ replacer.
 
 Add to HTML web page:
 
-  <script type="text/javascript" src="https://raw.github.com/benastan/better_select/master/build/better-select.js"></script>
+    <script type="text/javascript" src="https://raw.github.com/benastan/better_select/master/build/better-select.js"></script>
 
 Or clone source:
 
-  git clone git@github.com:benastan/better_select.git
+    git clone git@github.com:benastan/better_select.git
 
 ## Usage
 
@@ -20,15 +20,15 @@ Plain JavaScript:
   <select id="boring-select"><option>What a bore!</option><option>This
 is boring!</option></select>
   
-  boring_select = document.getElementById('boring-select')
-  better_select = new BetterSelect(boring_select)
+    boring_select = document.getElementById('boring-select')
+    better_select = new BetterSelect(boring_select)
 
 The BetterSelect instance offers a number of helpful properties, for
 example:
 
-  better_select.select // HTML Element of the replacement select.
-  better_select.dropdown // HTML Element containing the new options list.
-  better_select.selected_option // HTML Element containing the new options list.
+    better_select.select // HTML Element of the replacement select.
+    better_select.dropdown // HTML Element containing the new options list.
+    better_select.selected_option // HTML Element containing the new options list.
 
 BetterSelect doesn't interfere with how the original select element
 operates. When the form submits, the value still comes from the select
@@ -37,11 +37,12 @@ element itself.
 Additionally, you can attach events to the original element the same way
 as always:
 
-  ChangeHandler = function() { alert("It changed!") }
-  boring_select.addEventListener('change', ChangeHandler)
+    ChangeHandler = function() { alert("It changed!") }
+    boring_select.addEventListener('change', ChangeHandler)
 
 Or, with jQuery:
-  $(boring).on('change', ChangeHandler)
+
+    $(boring_select).on('change', ChangeHandler)
 
 ## CSS
 
