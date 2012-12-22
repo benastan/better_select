@@ -42,8 +42,7 @@
 
   addClass = function(tgt, className) {
     var classes;
-    classes = getClasses(tgt);
-    if (classes.indexOf(className) === -1) {
+    if ((classes = getClasses(tgt)).indexOf(className) === -1) {
       classes.push(className);
     }
     return setClasses(tgt, classes);
@@ -51,7 +50,7 @@
 
   removeClass = function(tgt, className) {
     var classes, index;
-    if (!(index = (classes = getClasses(tgt)).indexOf(className === -1))) {
+    if ((index = (classes = getClasses(tgt)).indexOf(className)) !== -1) {
       classes.splice(index, 1);
     }
     return setClasses(tgt, classes);
@@ -79,10 +78,10 @@
     option.select = function() {
       this.orig.selected = 'selected';
       this.setAttribute('class', 'option selected');
-      if (bs.select.getAttribute('class').indexOf('open') !== -1) {
-        bs.toggle();
+      bs.set_selected(option);
+      if (bs.open) {
+        return bs.toggle();
       }
-      return bs.set_selected(option);
     };
     option.addEventListener('click', function() {
       return option.select();
@@ -94,6 +93,11 @@
     first_char = option.innerHTML.substr(0, 1).toLowerCase();
     if (!bs.options_by_first_char[first_char]) {
       bs.options_by_first_char[first_char] = [];
+      bs.options_by_first_char[first_char].sort = function() {
+        var sorted;
+        (sorted = _(this).sortBy('innerHTML')).unshift(0, this.length);
+        return this.splice.apply(this, sorted);
+      };
     }
     bs.options_by_first_char[first_char].push(option);
     bs.options_by_first_char[first_char].sort();
@@ -115,11 +119,12 @@
   BetterSelect = (function() {
 
     BetterSelect.prototype.defaults = {
-      positionDropdown: true
+      positionDropdown: true,
+      resizeDropdown: true
     };
 
     function BetterSelect(elm, options) {
-      var child, children, last_char, method, selected, _i, _len, _ref,
+      var child, children, method, selected, _i, _len, _ref,
         _this = this;
       if (!(elm && elm.tagName && elm.tagName === 'SELECT')) {
         return;
@@ -131,6 +136,7 @@
       selected = elm.selectedOptions;
       this.select = build_element('select', elm, this);
       _ref = this.select.children, this.selected_option = _ref[0], this.dropdown = _ref[1];
+      this.selected_option.better_select = this;
       if (elm.id) {
         this.select.id = "" + elm.id + "-better-select";
         this.dropdown.id = "" + elm.id + "-better-select-dropdown";
@@ -159,8 +165,14 @@
         this.default_selected[0].better_version.select();
       }
       this.selected_option.addEventListener('click', function() {
-        _this.toggle();
-        return _this.set_selected(_this.dropdown_selected_option);
+        if (_this.open) {
+          if (_this.focused_option) {
+            _this.focused_option.select();
+          }
+        } else {
+          _this.set_focused(_this.dropdown_selected_option);
+        }
+        return _this.toggle();
       });
       window.addEventListener('click', function(e) {
         if (!(e.target === _this.selected_option || e.target === _this.select || _this.options.indexOf(e.target) !== -1)) {
@@ -169,7 +181,7 @@
           }
         }
       });
-      last_char = false;
+      this.last_char = false;
       this.selected_option.addEventListener('focus', function() {
         document.body.style.overflow = 'hidden';
         return addClass(_this.select, 'focus');
@@ -182,64 +194,79 @@
         }
         return true;
       });
-      this.selected_option.addEventListener('keydown', function(e) {
+      this.selected_option.addEventListener('keyup', function(e) {
         if ([38, 40].indexOf(e.keyCode) !== -1) {
           return e.preventDefault();
         }
       });
-      this.selected_option.addEventListener('keyup', function(e) {
-        var char, keyCode, last_character, option;
-        if (_this.open === false) {
-          _this.toggle();
+      this.selected_option.addEventListener('keydown', function(e) {
+        return _this.process_key_event(e);
+      });
+      window.addEventListener('keydown', function(e) {
+        if (_this.open) {
+          return _this.process_key_event(e);
         }
-        keyCode = e.keyCode;
-        switch (keyCode) {
-          case 38:
-            _this.set_focused(_this.options[(_this.focus_index -= 1) < 0 ? _this.focus_index = _this.options.length - 1 : _this.focus_index]);
-            break;
-          case 40:
-            _this.set_focused(_this.options[(_this.focus_index += 1) >= _this.options.length ? _this.focus_index = 0 : _this.focus_index]);
-            break;
-          case 13:
-            _this.focused_option.select();
-            break;
-          default:
-            if (keyCode > 47 && keyCode < 58) {
-              char = numbers[keyCode - 47];
-            } else if (keyCode > 64 && keyCode < 91) {
-              char = letters[keyCode - 65];
-            } else {
-              if (_this.focused_option) {
-                removeClass(_this.focused_option, 'focus');
-                _this.focused_option = false;
-                _this.focus_index = -1;
-              }
-              _this.toggle();
-            }
-            if (char && _this.options_by_first_char[char]) {
-              if (last_char !== char) {
-                _this.options_by_first_char[char].sort();
-              }
-              option = _this.options_by_first_char[char].shift();
-              _this.options_by_first_char[char].push(option);
-              _this.set_focused(option);
-              _this.focus_index = _this.options.indexOf(option);
-              last_character = char;
-            }
-        }
-        _this.dropdown.addEventListener('click', function() {
-          return console.log(arguments);
-        });
-        e.preventDefault();
-        e.stopPropagation();
-        e.returnValue = false;
-        return false;
       });
     }
 
     BetterSelect.prototype.focused_option = false;
 
     BetterSelect.prototype.focus_index = -1;
+
+    BetterSelect.prototype.select_focused = function() {
+      if (this.focused_option) {
+        return this.focused_option.select();
+      }
+    };
+
+    BetterSelect.prototype.process_key_event = function(e) {
+      var char, isLetter, isNumber, keyCode, option;
+      keyCode = e.keyCode;
+      isNumber = keyCode > 47 && keyCode < 58;
+      isLetter = keyCode > 64 && keyCode < 91;
+      if (keyCode === 9 && this.open) {
+        return this.select_focused();
+      }
+      if (!([13, 38, 40].indexOf(keyCode) !== -1 || isLetter || isNumber)) {
+        return;
+      }
+      if ([13, 38, 40].indexOf(keyCode) !== -1 && this.open === false) {
+        this.toggle();
+      }
+      switch (keyCode) {
+        case 38:
+          this.set_focused(this.options[(this.focus_index -= 1) < 0 ? this.focus_index = this.options.length - 1 : this.focus_index]);
+          break;
+        case 40:
+          this.set_focused(this.options[(this.focus_index += 1) >= this.options.length ? this.focus_index = 0 : this.focus_index]);
+          break;
+        case 13:
+          this.select_focused();
+          break;
+        default:
+          if (isNumber) {
+            char = numbers[new String(keyCode - 48)];
+          } else if (isLetter) {
+            char = letters[keyCode - 65];
+          }
+          if (char && this.options_by_first_char[char]) {
+            if (!this.open) {
+              this.toggle();
+            }
+            if (this.last_char !== char) {
+              this.options_by_first_char[char].sort();
+            }
+            option = this.options_by_first_char[char].shift();
+            this.options_by_first_char[char].push(option);
+            this.set_focused(option);
+            this.focus_index = this.options.indexOf(option);
+            this.last_char = char;
+          }
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return e.returnValue = false;
+    };
 
     BetterSelect.prototype.set_focused = function(option) {
       var class_for_selected,
@@ -256,7 +283,8 @@
       }
       this.focused_option = option;
       this.focused_option.setAttribute("class", "option focus" + (class_for_selected(option)));
-      return this.focus_index = this.options.indexOf(this.focused_option);
+      this.focus_index = this.options.indexOf(this.focused_option);
+      return this.focused_option.scrollIntoView();
     };
 
     BetterSelect.prototype.open = false;
@@ -264,6 +292,9 @@
     BetterSelect.prototype.toggle = function() {
       var height, top;
       ((this.open = !this.open) ? addClass : removeClass)(this.select, 'open');
+      if (this.settings.resizeDropdown) {
+        this.dropdown.style.width = this.select.offsetWidth + 'px';
+      }
       if (this.settings.positionDropdown) {
         if (this.dropdown.offsetHeight > window.innerHeight) {
           height = window.innerHeight * .50;
@@ -277,8 +308,11 @@
         top = top || (getTop(this.select) - this.dropdown_selected_option.offsetTop);
         top = getTop(this.select) - (this.dropdown_selected_option.offsetTop - this.dropdown.scrollTop);
         this.dropdown.style.top = (top < 0 ? 0 : top) + 'px';
-        return this.dropdown.style.left = this.open ? getLeft(this.select) + 'px' : '-9999px';
+        this.dropdown.style.left = this.open ? getLeft(this.select) + 'px' : '-9999px';
       }
+      return _(this.options_by_first_char).each(function(options) {
+        return options.sort();
+      });
     };
 
     BetterSelect.prototype.reset = function(option) {
@@ -297,15 +331,16 @@
         this.selected_option.innerHTML = option.innerHTML;
         e = document.createEvent('Event');
         e.initEvent('change', true, true);
-        return this.select.orig.dispatchEvent(e);
+        this.select.orig.dispatchEvent(e);
       }
+      return this.selected_option.focus();
     };
 
     BetterSelect.prototype.option_template = '<div class="option"><%= innerHTML %></div>';
 
     BetterSelect.prototype.option_group_template = '<div class="optgroup"><div class="option-group-label"><%= label %></div></div>';
 
-    BetterSelect.prototype.select_template = '<div class="select"><a href="javascript:void(0)" class="selected-option"></a><div class="better-select-dropdown dropdown"></div></div>';
+    BetterSelect.prototype.select_template = '<div class="select better-select"><a href="javascript:void(0)" class="selected-option"></a><div class="better-select-dropdown dropdown"></div></div>';
 
     BetterSelect.prototype.process_option = function(option) {
       return option;
