@@ -135,11 +135,11 @@ class BetterSelect
       @toggle() if @open is true
       true
 
-    @selected_option.addEventListener 'keydown', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
+    @selected_option.addEventListener 'keyup', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
 
-    @selected_option.addEventListener 'keyup', (e) => @process_key_event(e)
+    @selected_option.addEventListener 'keydown', (e) => @process_key_event(e)
 
-    window.addEventListener 'keyup', (e) => @process_key_event(e) if @open
+    window.addEventListener 'keydown', (e) => @process_key_event(e) if @open
 
   focused_option: false
   focus_index: -1
