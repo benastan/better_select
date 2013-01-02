@@ -56,13 +56,19 @@ renderOption = (orig_option, bs) ->
 
   bs.options.push option
   first_char = option.innerHTML.substr(0, 1).toLowerCase()
-  unless bs.options_by_first_char[first_char]
-    bs.options_by_first_char[first_char] = []
-    bs.options_by_first_char[first_char].sort = ->
-      (sorted = _(@).sortBy 'innerHTML').unshift 0, @.length
-      @.splice.apply @, sorted
-  bs.options_by_first_char[first_char].push option
-  bs.options_by_first_char[first_char].sort()
+  chars = option.innerHTML.toLowerCase().split ''
+  i = 0
+  ii = chars.length
+  option_thus_far = ''
+  for char in chars
+    option_thus_far = "#{option_thus_far}#{char}"
+    unless bs.options_by_char[option_thus_far]
+      bs.options_by_char[option_thus_far] = []
+      bs.options_by_char[option_thus_far].sort = ->
+        (sorted = _(@).sortBy 'innerHTML').unshift 0, @.length
+        @.splice.apply @, sorted
+    bs.options_by_char[option_thus_far].push option
+    bs.options_by_char[option_thus_far].sort()
   option
 
 renderOptionGroup = (orig_group, bs) ->
@@ -71,8 +77,9 @@ renderOptionGroup = (orig_group, bs) ->
   bs.option_groups.push group
   group
 
-class BetterSelect
+extensions = []
 
+class BetterSelect
   defaults:
     positionDropdown: true
     resizeDropdown: true
@@ -81,7 +88,7 @@ class BetterSelect
     return unless elm && elm.tagName && elm.tagName is 'SELECT'
     @settings = _.extend {}, @defaults, options
     @options = []
-    @options_by_first_char = {}
+    @options_by_char = {}
     @option_groups = []
     selected = elm.selectedOptions
     @select = build_element 'select', elm, @
@@ -166,13 +173,21 @@ class BetterSelect
         else if isLetter
           char = letters[keyCode - 65]
 
-        if char && @options_by_first_char[char]
-          @toggle() unless @open
-          @options_by_first_char[char].sort() unless @last_char is char
-          option = @options_by_first_char[char].shift()
-          @options_by_first_char[char].push option
-          @set_focused option
-          @focus_index = @options.indexOf option
+        keys_pressed = _keys_pressed = @keys_pressed = "#{@keys_pressed || ''}#{char}"
+        _.delay (-> @keys_pressed = '' if _keys_pressed is @keys_pressed ), 3000
+
+        if char
+          while keys_pressed.length
+            if @options_by_char[keys_pressed]
+              @toggle() unless @open
+              @options_by_char[keys_pressed].sort() unless @last_char is char
+              option = @options_by_char[keys_pressed].shift()
+              @options_by_char[keys_pressed].push option
+              @set_focused option
+              @focus_index = @options.indexOf option
+              keys_pressed = ''
+            else
+              keys_pressed = (-> k = keys_pressed.split(''); k.shift(); k.join(''))()
           @last_char = char
 
     e.preventDefault()
@@ -185,7 +200,7 @@ class BetterSelect
     @focused_option = option
     @focused_option.setAttribute("class", "option focus#{class_for_selected(option)}")
     @focus_index = @options.indexOf @focused_option
-    @focused_option.scrollIntoView()
+    @focused_option.scrollIntoView() if @adjust_height
 
   open: false
 
@@ -205,7 +220,7 @@ class BetterSelect
       top = getTop(@select) - (@dropdown_selected_option.offsetTop - @dropdown.scrollTop)
       @dropdown.style.top = (if top < 0 then 0 else top)  + 'px'
       @dropdown.style.left = if @open then getLeft(@select) + 'px' else '-9999px'
-    _(@options_by_first_char).each (options) -> options.sort()
+    _(@options_by_char).each (options) -> options.sort()
 
   reset: (option) -> @default_selected[0].better_version.select() if @default_selected
 
@@ -225,5 +240,7 @@ class BetterSelect
   process_option: (option) -> option
   process_option_group: (option_group) -> option_group
   process_select: (select) -> select
+
+BetterSelect.register_extension = (extensions) -> _(extensions).each (k, v) -> console.log(k, v)
 
 window.BetterSelect = BetterSelect
