@@ -3,6 +3,9 @@ $$ = (html) ->
   elm.innerHTML = html
   if elm.children.length > 1 then elm.children else elm.children[0]
 
+chrome = /AppleWebKit\/(.+)Chrome/.test navigator.userAgent
+moz = /Gecko\//.test navigator.userAgent
+
 getPos = (tgt, method) ->
   pos = 0
   while tgt
@@ -132,21 +135,27 @@ class BetterSelect
 
     @last_char = false
 
-    @selected_option.addEventListener 'focus', =>
-      document.body.style.overflow = 'hidden'
-      addClass @select, 'focus'
+    event_tgt = @select
 
-    @selected_option.addEventListener 'blur', =>
+    event_tgt.addEventListener 'focus', => addClass @select, 'focus'
+
+    event_tgt.addEventListener 'blur', (e) =>
+      if tgt = e.explicitOriginalTarget
+        tgt = tgt.parentNode unless tgt.tagName is 'DIV'
+        @set_selected tgt unless @options.indexOf(tgt) is -1
       removeClass @select, 'focus'
       document.body.style.overflow = 'auto'
       @toggle() if @open is true
       true
 
-    @selected_option.addEventListener 'keyup', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
+    event_tgt.addEventListener 'keyup', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
 
-    @selected_option.addEventListener 'keydown', (e) => @process_key_event(e)
+    event_tgt.addEventListener 'keydown', (e) => @process_key_event(e)
 
     window.addEventListener 'keydown', (e) => @process_key_event(e) if @open
+
+    @select.tabIndex = 0
+    @selected_option.tabIndex = -1
 
   focused_option: false
   focus_index: -1
