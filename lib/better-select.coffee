@@ -52,6 +52,11 @@ renderOption = (orig_option, bs) ->
     bs.set_selected option
     bs.toggle() if bs.open
 
+  option.scroll_by = ->
+    if option.offsetTop < bs.dropdown.scrollTop
+      bs.dropdown.scrollTop = option.offsetTop
+    if option.offsetTop + option.offsetHeight > bs.dropdown.offsetHeight - bs.dropdown.scrollTop
+      bs.dropdown.scrollTop =option.offsetTop + option.offsetHeight - bs.dropdown.offsetHeight
 
   option.focus = -> bs.set_focused option
 
@@ -221,9 +226,8 @@ class BetterSelect
         height = window.innerHeight * .50
         @dropdown.style.height = height + 'px'
         @dropdown.style['overflow-y'] = 'auto'
-        if @dropdown_selected_option.offsetTop > height || @adjust_height
-          @dropdown_selected_option.scrollIntoView()
-          @adjust_height = true
+        @dropdown_selected_option.scroll_by()
+        @adjust_height = true
       top = top || (getTop(@select) - @dropdown_selected_option.offsetTop)
       top = getTop(@select) - (@dropdown_selected_option.offsetTop - @dropdown.scrollTop)
       @dropdown.style.top = (if top < 0 then 0 else top)  + 'px'
