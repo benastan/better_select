@@ -146,12 +146,13 @@ class BetterSelect
     event_tgt.addEventListener 'focus', => addClass @select, 'focus'
 
     event_tgt.addEventListener 'blur', (e) =>
-      if tgt = e.explicitOriginalTarget
+      if tgt = e.target
         tgt = tgt.parentNode unless tgt.tagName is 'DIV'
         @set_selected tgt unless @options.indexOf(tgt) is -1
       removeClass @select, 'focus'
       document.body.style.overflow = 'auto'
       @toggle() if @open is true
+      @keys_pressed = ''
       true
 
     event_tgt.addEventListener 'keyup', (e) => e.preventDefault() unless [38, 40].indexOf(e.keyCode) is -1
