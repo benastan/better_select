@@ -57,6 +57,7 @@ renderOption = (orig_option, bs) ->
 
   option.focus = -> bs.set_focused option
 
+  option.addEventListener 'mouseover', -> option.focus()
   bs.options.push option
   first_char = option.innerHTML.substr(0, 1).toLowerCase()
   chars = option.innerHTML.toLowerCase().split ''
