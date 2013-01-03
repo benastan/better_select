@@ -55,7 +55,7 @@ renderOption = (orig_option, bs) ->
   option.addEventListener 'click', ->
     option.select()
 
-  option.addEventListener 'mouseover', -> option.better_select.set_focused option
+  option.focus = -> bs.set_focused option
 
   bs.options.push option
   first_char = option.innerHTML.substr(0, 1).toLowerCase()
@@ -126,7 +126,7 @@ class BetterSelect
       if @open
         @focused_option.select() if @focused_option
       else
-        @set_focused @dropdown_selected_option
+        @dropdown_selected_option.focus()
       @toggle()
 
     window.addEventListener 'click', (e) =>
@@ -173,8 +173,8 @@ class BetterSelect
     @toggle() if [13, 38, 40].indexOf(keyCode) isnt -1 && @open is false
 
     switch keyCode
-      when 38 then @set_focused @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index]
-      when 40 then @set_focused @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index]
+      when 38 then @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index].focus()
+      when 40 then @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index].focus()
       when 13 then @select_focused()
       else
         if isNumber
@@ -192,7 +192,7 @@ class BetterSelect
               @options_by_char[keys_pressed].sort() unless @last_char is char
               option = @options_by_char[keys_pressed].shift()
               @options_by_char[keys_pressed].push option
-              @set_focused option
+              option.focus()
               @focus_index = @options.indexOf option
               keys_pressed = ''
             else
@@ -204,12 +204,10 @@ class BetterSelect
     e.returnValue = false
 
   set_focused: (option) ->
-    class_for_selected = (option) => if @selected_option && option.innerHTML is @selected_option.innerHTML then " selected" else ""
-    @focused_option.setAttribute('class', "option#{class_for_selected(@focused_option)}") if @focused_option
-    @focused_option = option
-    @focused_option.setAttribute("class", "option focus#{class_for_selected(option)}")
+    removeClass @focused_option, 'focus' if @focused_option
+    addClass @focused_option = option, 'focus'
     @focus_index = @options.indexOf @focused_option
-    @focused_option.scrollIntoView() if @adjust_height
+    @focused_option.scroll_by() if @adjust_height
 
   open: false
 
