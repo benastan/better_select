@@ -13,6 +13,13 @@ getPos = (tgt, method) ->
     tgt = tgt.offsetParent
   pos
 
+findForm = (tgt) ->
+  parent = tgt.parentNode
+  return false unless parent
+  return parent if parent.tagName is 'FORM'
+  return findForm parent
+
+
 getTop = (tgt) -> getPos tgt, 'offsetTop'
 getLeft = (tgt) -> getPos tgt, 'offsetLeft'
 
@@ -56,13 +63,15 @@ renderOption = (orig_option, bs) ->
     if option.offsetTop < bs.dropdown.scrollTop
       bs.dropdown.scrollTop = option.offsetTop
     if option.offsetTop + option.offsetHeight > bs.dropdown.offsetHeight - bs.dropdown.scrollTop
-      bs.dropdown.scrollTop =option.offsetTop + option.offsetHeight - bs.dropdown.offsetHeight
+      bs.dropdown.scrollTop = option.offsetTop + option.offsetHeight - bs.dropdown.offsetHeight
 
   option.focus = -> bs.set_focused option
 
   option.addEventListener 'click', -> option.select()
   option.addEventListener 'mouseover', -> option.focus()
 
+  orig_option.better_option = option
+  option.orig_option = orig_option
   bs.options.push option
   first_char = option.innerHTML.substr(0, 1).toLowerCase()
   chars = option.innerHTML.toLowerCase().split ''
@@ -95,6 +104,7 @@ class BetterSelect
 
   constructor: (elm, options) ->
     return unless elm && elm.tagName && elm.tagName is 'SELECT'
+    @form = findForm elm
     @settings = _.extend {}, @defaults, options
     @options = []
     @options_by_char = {}
@@ -103,6 +113,7 @@ class BetterSelect
     @select = build_element 'select', elm, @
     [@selected_option, @dropdown] = @select.children
     @selected_option.better_select = @
+    elm.better_select = @
 
     if elm.id
       @select.id = "#{elm.id}-better-select"
@@ -132,8 +143,7 @@ class BetterSelect
       if @open
         @focused_option.select() if @focused_option
       else
-        @dropdown_selected_option.focus()
-      @toggle()
+        @toggle()
 
     window.addEventListener 'click', (e) =>
       unless e.target == @selected_option || e.target == @select || @options.indexOf(e.target) isnt -1
@@ -163,6 +173,11 @@ class BetterSelect
 
     @select.tabIndex = 0
     @selected_option.tabIndex = -1
+    @orig_select = elm
+
+  update: ->
+    val = @orig_select.value
+    _(@options).each (option) => option.select() if option.orig_option.value is val
 
   focused_option: false
   focus_index: -1
@@ -173,16 +188,29 @@ class BetterSelect
     isNumber = keyCode > 47 && keyCode < 58
     isLetter = keyCode > 64 && keyCode < 91
 
+    return @toggle() if keyCode is 27
+
     return @select_focused() if keyCode is 9 && @open
 
     return unless [13, 38, 40].indexOf(keyCode) isnt -1 || isLetter || isNumber
 
-    @toggle() if [13, 38, 40].indexOf(keyCode) isnt -1 && @open is false
+    @toggle() if [38, 40].indexOf(keyCode) isnt -1 && @open is false
 
     switch keyCode
-      when 38 then @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index].focus()
-      when 40 then @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index].focus()
-      when 13 then @select_focused()
+      when 38
+        @options[if (@focus_index -= 1) < 0 then @focus_index = @options.length - 1 else @focus_index].focus()
+        @focused_option.scroll_by()
+      when 40
+        @options[if (@focus_index += 1) >= @options.length then @focus_index = 0 else @focus_index].focus()
+        @focused_option.scroll_by()
+      when 13
+        if @open
+          @select_focused()
+        else
+          e = document.createEvent 'Event'
+          e.initEvent 'submit', true, true
+          @form.dispatchEvent e
+
       else
         if isNumber
           char = numbers[new String(keyCode - 48)]
@@ -200,6 +228,7 @@ class BetterSelect
               option = @options_by_char[keys_pressed].shift()
               @options_by_char[keys_pressed].push option
               option.focus()
+              option.scroll_by()
               @focus_index = @options.indexOf option
               keys_pressed = ''
             else
@@ -214,7 +243,6 @@ class BetterSelect
     removeClass @focused_option, 'focus' if @focused_option
     addClass @focused_option = option, 'focus'
     @focus_index = @options.indexOf @focused_option
-    @focused_option.scroll_by() if @adjust_height
 
   open: false
 
@@ -238,14 +266,17 @@ class BetterSelect
   reset: (option) -> @default_selected[0].better_version.select() if @default_selected
 
   set_selected: (option) ->
-    unless @selected_option.innerHTML == option.innerHTML
-      removeClass(@dropdown_selected_option, 'selected') if @dropdown_selected_option
-      addClass @dropdown_selected_option = option, 'selected'
-      @selected_option.innerHTML = option.innerHTML
-      e = document.createEvent('Event')
-      e.initEvent 'change', true, true
-      @select.orig.dispatchEvent e
-    @selected_option.focus()
+    unless option
+      @update()
+    else
+      unless @selected_option.innerHTML == option.innerHTML
+        removeClass(@dropdown_selected_option, 'selected') if @dropdown_selected_option
+        addClass @dropdown_selected_option = option, 'selected'
+        @selected_option.innerHTML = option.innerHTML
+        e = document.createEvent('Event')
+        e.initEvent 'change', true, true
+        @select.orig.dispatchEvent e
+        @select.focus()
 
   option_template: '<div class="option"><%= innerHTML %></div>'
   option_group_template: '<div class="optgroup"><div class="option-group-label"><%= label %></div></div>'
